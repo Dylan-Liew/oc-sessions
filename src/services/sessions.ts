@@ -53,6 +53,14 @@ export function openSessionStore(): SessionDatabase {
   }
 }
 
+export function openSessionStoreWritable(): SessionDatabase {
+  try {
+    return new DatabaseConstructor(getDbPath(), { readonly: false, fileMustExist: true });
+  } catch (error) {
+    fail(`Failed to open SQLite database: ${(error as Error).message}`);
+  }
+}
+
 export function resolveSessionId(
   db: SessionDatabase,
   input: string,
@@ -270,4 +278,14 @@ export function getRecentTextParts(db: SessionDatabase, id: string): RecentTextP
   `,
     )
     .all(id) as RecentTextPart[];
+}
+
+export function setSessionTitle(db: SessionDatabase, id: string, title: string): void {
+  db.prepare(
+    `
+      update session
+      set title = ?
+      where id = ?
+    `,
+  ).run(title, id);
 }

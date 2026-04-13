@@ -30,7 +30,7 @@ export function readOpencode(parts: string[]): string {
   return (result.stdout || "").trim();
 }
 
-export function runOpencode(parts: string[], cwd: string): never {
+export function runOpencodeWithStatus(parts: string[], cwd: string): number {
   const result = spawnSync("opencode", parts, {
     cwd,
     stdio: "inherit",
@@ -40,5 +40,9 @@ export function runOpencode(parts: string[], cwd: string): never {
     fail(`Failed to run opencode: ${result.error.message}`);
   }
 
-  process.exit(result.status ?? 1);
+  return result.status ?? 1;
+}
+
+export function runOpencode(parts: string[], cwd: string): never {
+  process.exit(runOpencodeWithStatus(parts, cwd));
 }

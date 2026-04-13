@@ -1,5 +1,6 @@
 import process from "node:process";
 import { fail } from "../../lib/errors.js";
+import { renderNewSessionInk } from "../../output/ink.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
 import {
   listRootSessionsForDirectory,
@@ -18,7 +19,11 @@ function getRootSessionIdsForDirectory(directory: string): Set<string> {
   }
 }
 
-function applyTitleToNewestNewSession(directory: string, title: string, existingIds: Set<string>): void {
+function applyTitleToNewestNewSession(
+  directory: string,
+  title: string,
+  existingIds: Set<string>,
+): void {
   const readDb = openSessionStore();
   let sessionId: string | undefined;
 
@@ -52,6 +57,11 @@ export function runNewCommand(args: string[]): never {
   const directory = process.cwd();
   const existingIds = getRootSessionIdsForDirectory(directory);
   const prompt = promptParts.length > 0 ? promptParts.join(" ") : title;
+
+  if (process.stdout.isTTY) {
+    process.stdout.write(renderNewSessionInk(title, prompt));
+  }
+
   const exitCode = runOpencodeWithStatus(["--prompt", prompt], directory);
 
   if (exitCode === 0) {

@@ -1,5 +1,6 @@
 import process from "node:process";
 import { sanitizeInline } from "../../output/format.js";
+import { renderListInk } from "../../output/ink.js";
 import { formatTable } from "../../output/table.js";
 import { listRootSessions, openSessionStore } from "../../services/sessions.js";
 
@@ -8,6 +9,12 @@ export function runListCommand(): void {
 
   try {
     const rows = listRootSessions(db);
+
+    if (process.stdout.isTTY) {
+      process.stdout.write(renderListInk(rows));
+      return;
+    }
+
     process.stdout.write(
       formatTable(
         ["id", "updated", "title", "directory"],

@@ -1,8 +1,13 @@
 import readline from "node:readline/promises";
 import process from "node:process";
 import { rankFuzzy } from "../lib/fuzzy.js";
+import { confirmInk, selectWithSearchInk } from "./ink.js";
 
 export async function confirm(message: string): Promise<boolean> {
+  if (process.stdout.isTTY && process.stdin.isTTY) {
+    return confirmInk(message);
+  }
+
   const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
 
   try {
@@ -57,6 +62,10 @@ export async function selectWithSearch(
   choices: SearchChoice[],
   options: { initialPrompt?: string; maxVisible?: number } = {},
 ): Promise<number | null> {
+  if (process.stdout.isTTY && process.stdin.isTTY) {
+    return selectWithSearchInk(choices, { maxVisible: options.maxVisible });
+  }
+
   const { initialPrompt = "Search (or pick number, Enter cancels): ", maxVisible = 12 } = options;
   const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
   const indexedChoices = choices.map((choice, index) => ({ choice, index }));

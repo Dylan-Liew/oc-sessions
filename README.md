@@ -11,6 +11,7 @@
 - `oc view` and `oc v` to inspect session details and recent text
 - `oc resume` and `oc r` to reopen a session
 - `oc delete` and `oc d` to remove a session after confirmation
+- Ink-powered terminal UX for list/view/select/confirm flows
 - exact-title lookup for `view`, `resume`, and `delete`
 - fuzzy match suggestions for unresolved or ambiguous session lookups
 - no-argument `oc resume` that looks up sessions for the current directory and supports interactive search when there are multiple matches
@@ -57,6 +58,7 @@ oc d <session>
 ```
 
 `oc new` launches the full OpenCode TUI (`opencode --prompt ...`) so the session is interactive from the start.
+When interactive prompts are needed, use arrow keys and Enter in the Ink UI (Esc cancels).
 
 ## Examples
 

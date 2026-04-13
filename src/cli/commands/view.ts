@@ -1,6 +1,7 @@
 import process from "node:process";
 import { fail } from "../../lib/errors.js";
 import { formatKeyValue, formatSection, printable, truncateInline } from "../../output/format.js";
+import { renderViewInk } from "../../output/ink.js";
 import { formatTable } from "../../output/table.js";
 import {
   getRecentTextParts,
@@ -23,6 +24,12 @@ export function runViewCommand(input: string): void {
 
     const counts = getSessionCounts(db, id);
     const recentParts = getRecentTextParts(db, id);
+
+    if (process.stdout.isTTY) {
+      process.stdout.write(renderViewInk(session, counts, recentParts));
+      return;
+    }
+
     const textColumnWidth = Math.max(32, (process.stdout.columns || 120) - 35);
 
     const details = formatKeyValue([

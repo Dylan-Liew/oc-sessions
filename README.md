@@ -1,5 +1,7 @@
 # oc-sessions
 
+[![npm downloads](https://img.shields.io/npm/dm/oc-sessions)](https://www.npmjs.com/package/oc-sessions)
+
 `oc-sessions` installs the `oc` CLI, a small tool for listing, inspecting, resuming, and deleting OpenCode sessions from the local session database.
 
 ## Features
@@ -45,7 +47,7 @@ node ./dist/cli/index.js list
 Publishing is automated via GitHub Actions:
 
 - push a version tag like `v0.1.1` (must match `package.json` version), or
-- run the `npm-release` workflow manually.
+- run the `release` workflow manually.
 
 Repository secret required:
 

@@ -34,6 +34,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepare": "npm run build",
     "start": "node ./dist/cli/index.js"
   },
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   }
 }

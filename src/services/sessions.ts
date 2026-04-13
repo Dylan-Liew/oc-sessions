@@ -37,6 +37,11 @@ export interface RecentTextPart {
   text: string;
 }
 
+export interface SessionActivity {
+  sessionId: string;
+  activityMs: number;
+}
+
 function getDbPath(): string {
   try {
     return readOpencode(["db", "path"]);
@@ -208,6 +213,28 @@ export function listRootSessionsForDirectory(
   `,
     )
     .all(directory) as RootSession[];
+}
+
+export function getLatestSessionForDirectorySince(
+  db: SessionDatabase,
+  directory: string,
+  sinceMs: number,
+): SessionActivity | undefined {
+  return db
+    .prepare(
+      `
+    select
+      s.id as sessionId,
+      max(coalesce(s.time_updated, 0), coalesce(s.time_created, 0)) as activityMs
+    from session s
+    left join project p on p.id = s.project_id
+    where coalesce(nullif(s.directory, ''), p.worktree, '') = ?
+      and max(coalesce(s.time_updated, 0), coalesce(s.time_created, 0)) >= ?
+    order by activityMs desc
+    limit 1
+  `,
+    )
+    .get(directory, sinceMs) as SessionActivity | undefined;
 }
 
 export function getSession(db: SessionDatabase, id: string): SessionDetails | undefined {

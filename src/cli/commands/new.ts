@@ -1,40 +1,28 @@
 import process from "node:process";
 import { fail } from "../../lib/errors.js";
-import { renderNewSessionInk } from "../../output/ink.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
 import {
-  listRootSessionsForDirectory,
+  getLatestSessionForDirectorySince,
   openSessionStore,
   openSessionStoreWritable,
   setSessionTitle,
 } from "../../services/sessions.js";
 
-function getRootSessionIdsForDirectory(directory: string): Set<string> {
+function getLatestTouchedSessionId(directory: string, sinceMs: number): string | undefined {
   const db = openSessionStore();
 
   try {
-    return new Set(listRootSessionsForDirectory(db, directory).map((session) => session.sessionId));
+    return getLatestSessionForDirectorySince(db, directory, sinceMs)?.sessionId;
   } finally {
     db.close();
   }
 }
 
-function applyTitleToNewestNewSession(
-  directory: string,
-  title: string,
-  existingIds: Set<string>,
-): void {
-  const readDb = openSessionStore();
-  let sessionId: string | undefined;
-
-  try {
-    const sessions = listRootSessionsForDirectory(readDb, directory);
-    sessionId = sessions.find((session) => !existingIds.has(session.sessionId))?.sessionId;
-  } finally {
-    readDb.close();
-  }
+function applyTitleToLatestTouchedSession(directory: string, title: string, sinceMs: number): void {
+  const sessionId = getLatestTouchedSessionId(directory, sinceMs);
 
   if (!sessionId) {
+    process.stderr.write(`Warning: could not determine latest session to apply title "${title}".\n`);
     return;
   }
 
@@ -54,18 +42,17 @@ export function runNewCommand(args: string[]): never {
     fail("Missing required title");
   }
 
-  const directory = process.cwd();
-  const existingIds = getRootSessionIdsForDirectory(directory);
-  const prompt = promptParts.length > 0 ? promptParts.join(" ") : title;
-
-  if (process.stdout.isTTY) {
-    process.stdout.write(renderNewSessionInk(title, prompt));
+  if (promptParts.length === 0) {
+    fail("Missing required prompt. Usage: oc new <title> <prompt...>");
   }
 
+  const directory = process.cwd();
+  const startedAtMs = Date.now();
+  const prompt = promptParts.join(" ");
   const exitCode = runOpencodeWithStatus(["--prompt", prompt], directory);
 
   if (exitCode === 0) {
-    applyTitleToNewestNewSession(directory, title, existingIds);
+    applyTitleToLatestTouchedSession(directory, title, startedAtMs);
   }
 
   process.exit(exitCode);

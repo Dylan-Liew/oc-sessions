@@ -23,14 +23,6 @@ export async function runViewCommand(input: string): Promise<void> {
 
     const counts = getSessionCounts(db, id);
     const recentParts = getRecentTextParts(db, id);
-
-    if (process.stdout.isTTY) {
-      // Lazy-load Ink only when needed for TTY output
-      const { renderViewInk } = await import("../../output/ink.js");
-      process.stdout.write(renderViewInk(session, counts, recentParts));
-      return;
-    }
-
     const textColumnWidth = Math.max(32, (process.stdout.columns || 120) - 35);
 
     const details = formatKeyValue([

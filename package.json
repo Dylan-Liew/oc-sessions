@@ -40,11 +40,7 @@
     "start": "node ./dist/cli/index.js"
   },
   "dependencies": {
-    "@types/react": "^19.2.14",
-    "better-sqlite3": "^12.8.0",
-    "ink": "^7.0.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^19.2.5"
+    "better-sqlite3": "^12.8.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

@@ -36,6 +36,7 @@ async function resolveResumeIdFromCurrentDirectory(): Promise<string> {
     }
 
     process.stdout.write(`Multiple sessions found for ${process.cwd()}.\n`);
+    process.stdout.write("\n");
     const selectedIndex = await selectWithSearch(
       sessions.map((session) => ({
         label: `${sanitizeInline(session.title)} (${session.sessionId.slice(0, 12)})`,

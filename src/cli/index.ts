@@ -2,7 +2,7 @@ import process from "node:process";
 import { fail } from "../lib/errors.js";
 
 const USAGE = `Usage:
-  oc new <title> [prompt...]
+  oc new <title> <prompt...>
   oc list
   oc view <session>
   oc resume [session]
@@ -34,7 +34,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
   switch (command) {
     case "new":
-      if (rest.length < 1) {
+      if (rest.length < 2) {
         usageError();
       }
 

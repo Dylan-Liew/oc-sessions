@@ -1,20 +1,6 @@
 # oc-sessions
 
-[![npm downloads](https://img.shields.io/npm/dm/oc-sessions)](https://www.npmjs.com/package/oc-sessions)
-
 `oc-sessions` installs the `oc` CLI, a small tool for listing, inspecting, resuming, and deleting OpenCode sessions from the local session database.
-
-## Features
-
-- `oc new` to start a new interactive session in the current directory
-- `oc list` and `oc ls` to browse root sessions
-- `oc view` and `oc v` to inspect session details and recent text
-- `oc resume` and `oc r` to reopen a session
-- `oc delete` and `oc d` to remove a session after confirmation
-- lightweight interactive selector for `oc resume` when multiple sessions match
-- exact-title lookup for `view`, `resume`, and `delete`
-- fuzzy match suggestions for unresolved or ambiguous session lookups
-- no-argument `oc resume` that looks up sessions for the current directory and supports interactive search when there are multiple matches
 
 ## Requirements
 
@@ -27,6 +13,12 @@ From npm after publishing:
 
 ```bash
 npm install -g oc-sessions
+```
+
+From Bun:
+
+```bash
+bun add -g oc-sessions
 ```
 
 For local development from this repository:
@@ -46,25 +38,34 @@ node ./dist/cli/index.js list
 ## Usage
 
 ```text
-oc new <title> <prompt...>
-oc list
-oc view <session>
-oc resume [session]
-oc delete <session>
+Usage:
+  oc new <title> <prompt...>
+  oc list
+  oc view <session>
+  oc resume [session]
+  oc delete <session>
+
+Commands:
+  new       Start a new titled OpenCode session
+  list, ls  List root sessions across all projects
+  view, v   Show session metadata and recent text parts
+  resume, r Launch opencode in the session directory
+  delete, d Delete the session via opencode after confirmation
 ```
 
-Aliases: `oc ls` → `oc list`, `oc v` → `oc view`, `oc r` → `oc resume`, `oc d` → `oc delete`.
+## Session lookup
 
-`oc new` launches the full OpenCode TUI (`opencode --prompt ...`) so the session is interactive from the start. Title and prompt are both required.
-When resume selection is prompted, use arrow keys and Enter (Ctrl+C cancels).
+For commands that take `<session>`, the CLI resolves in this order:
 
-## Examples
+1. Exact session ID match
+2. Exact session title match
+3. Unique session title prefix match
+4. Unique session ID prefix match
+
+## Quick workflows
 
 ```bash
 oc new "Fix login redirect" "Investigate the redirect loop after sign-in and patch it."
-oc ls
-oc v "usage-plugin"
+oc list
 oc resume
-oc r "usage-plugin"
-oc d "usage-plugin"
 ```

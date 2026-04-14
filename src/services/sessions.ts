@@ -106,6 +106,30 @@ export function resolveSessionId(
     if (titleMatches.length > 1) {
       fail(`! Session title is ambiguous: ${input}\n\n${titleMatches.map((row) => row.id).join("\n")}`);
     }
+
+    const titlePrefixMatches = db
+      .prepare(
+        `
+      select
+        id,
+        replace(replace(title, char(10), ' '), char(13), ' ') as title
+      from session
+      where substr(title, 1, length(?)) = ?
+      order by time_updated desc
+    `,
+      )
+      .all(input, input) as Array<{ id: string; title: string }>;
+
+    if (titlePrefixMatches.length === 1) {
+      return titlePrefixMatches[0].id;
+    }
+
+    if (titlePrefixMatches.length > 1) {
+      fail(
+        `! Session title prefix is ambiguous: ${input}\n\n` +
+          `${titlePrefixMatches.map((row) => `${row.id}\t${row.title}`).join("\n")}`,
+      );
+    }
   }
 
   const prefixMatches = db

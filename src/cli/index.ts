@@ -11,7 +11,7 @@ const USAGE = `Usage:
 Commands:
   new       Start a new titled OpenCode session
   list, ls  List root sessions across all projects
-  view, v   Show session metadata and recent text parts from SQLite
+  view, v   Show session metadata and recent text parts
   resume, r Launch opencode in the session directory
   delete, d Delete the session via opencode after confirmation
 `;

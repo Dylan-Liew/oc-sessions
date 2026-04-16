@@ -41,17 +41,20 @@ node ./dist/cli/index.js list
 oc <command>
 
 Commands:
+  help                 Show CLI help
   new                  Start a new titled OpenCode session
   list, ls             List root sessions across all projects
-  view, v              Show session metadata and recent text parts
-  resume, r            Launch opencode in the session directory
-  delete, d            Delete the session via opencode after confirmation
+  view, v <session>    Show session metadata and recent text parts
+  resume, r [session]  Launch opencode in the session directory
+  delete, d <session>  Delete the session via opencode after confirmation
   completion           Print a fish completion script
 ```
 
 ## Session lookup
 
-For commands that take `<session>`, the CLI resolves in this order:
+`<session>` is required for `view` and `delete`. `[session]` is optional for `resume`.
+
+When a session value is provided, the CLI resolves it in this order:
 
 1. Exact session ID match
 2. Exact session title match
@@ -61,14 +64,15 @@ For commands that take `<session>`, the CLI resolves in this order:
 ## Quick workflows
 
 ```bash
+oc help
 oc new "Fix login redirect" "Investigate the redirect loop after sign-in and patch it."
 oc list
 oc resume
 ```
 
-## Fish completions
+## Optional Fish completions
 
-Install a completion file into Fish's user completion directory:
+If you use Fish, install a completion file into Fish's user completion directory:
 
 ```bash
 mkdir -p ~/.config/fish/completions
@@ -80,7 +84,3 @@ Open a new Fish shell after installing the file, or run:
 ```fish
 source ~/.config/fish/completions/oc.fish
 ```
-
-## `oc` command-name collision
-
-`oc` is also the name of the OpenShift CLI. Some systems already ship Fish completions for that unrelated command, which is why Fish may try `oc completion fish` before `oc-sessions` handled it directly.

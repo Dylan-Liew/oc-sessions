@@ -2,6 +2,7 @@ import process from "node:process";
 import yargs, { type Argv, type CommandModule } from "yargs";
 import { hideBin } from "yargs/helpers";
 import { commandModules, internalCommandModules } from "./commands/index.js";
+import { CliError } from "../lib/errors.js";
 
 interface BuildCliOptions {
   includeInternalCommands?: boolean;
@@ -14,16 +15,22 @@ function registerCommands(cli: Argv, modules: ReadonlyArray<CommandModule>): Arg
   );
 }
 
+function sanitizeHelpText(help: string): string {
+  return help.replace(/\[aliases:/g, "[alias:");
+}
+
+export async function showHelpForArgs(argv: string[]): Promise<void> {
+  const output = await buildCli(argv).getHelp();
+  const sanitized = sanitizeHelpText(output);
+  process.stdout.write(sanitized.endsWith("\n") ? sanitized : `${sanitized}\n`);
+}
+
 function createCli(argv: string[], options: BuildCliOptions = {}): Argv {
   const { includeInternalCommands = false } = options;
   const examples = [
-    [
-      '$0 new "Fix login redirect" "Investigate the redirect loop after sign-in and patch it."',
-      "Start a new titled session",
-    ] as const,
+    ['$0 new "Fix login" "Patch redirect loop"', "Start a new titled session"] as const,
     ["$0 list", "List root sessions across all projects"] as const,
     ["$0 resume", "Resume the latest root session for the current directory"] as const,
-    ["$0 completion fish", "Print a fish completion script"] as const,
   ];
 
   let cli = yargs(argv)
@@ -33,14 +40,20 @@ function createCli(argv: string[], options: BuildCliOptions = {}): Argv {
       "sort-commands": true,
     })
     .usage("Usage:\n  $0 <command>")
-    .help()
-    .alias("h", "help")
+    .exitProcess(false)
+    .help(false)
     .version(false)
     .recommendCommands()
     .strictCommands()
     .demandCommand(1, "Specify a command.")
-    .wrap(Math.min(120, process.stdout.columns || 120))
-    .epilogue("Run 'oc completion fish' to install fish completions.");
+    .fail((message, error) => {
+      if (error) {
+        throw error;
+      }
+
+      throw new CliError(message || "Command failed");
+    })
+    .wrap(Math.min(120, process.stdout.columns || 120));
 
   for (const [command, description] of examples) {
     cli = cli.example(command, description);
@@ -66,5 +79,10 @@ export async function getCompletionCandidates(args: string[]): Promise<string[]>
 }
 
 export async function main(argv = hideBin(process.argv)): Promise<void> {
+  if (argv.length === 0) {
+    await showHelpForArgs([]);
+    return;
+  }
+
   await buildCli(argv).parseAsync();
 }

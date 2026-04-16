@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
+import { resolveSessionIdInteractively } from "../session-picker.js";
 import { confirm } from "../../output/prompt.js";
 import { runOpencode } from "../../services/opencode.js";
-import { getSession, openSessionStore, resolveSessionId } from "../../services/sessions.js";
+import { getSession, openSessionStore } from "../../services/sessions.js";
 
 function ensureSessionDirectory(id: string, directory: string): void {
   if (!directory) {
@@ -15,11 +16,18 @@ function ensureSessionDirectory(id: string, directory: string): void {
   }
 }
 
+async function resolveDeleteSessionId(
+  db: ReturnType<typeof openSessionStore>,
+  input: string,
+): Promise<string> {
+  return resolveSessionIdInteractively(db, input, { allowTitle: true });
+}
+
 export async function runDeleteCommand(input: string): Promise<void> {
   const db = openSessionStore();
 
   try {
-    const id = resolveSessionId(db, input, { allowTitle: true });
+    const id = await resolveDeleteSessionId(db, input);
     const session = getSession(db, id);
 
     if (!session) {

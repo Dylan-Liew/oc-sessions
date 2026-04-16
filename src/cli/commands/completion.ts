@@ -15,7 +15,7 @@ function normalizeTokens(value: unknown): string[] {
 export const completionCommand: CommandModule = {
   command: "completion <shell>",
   aliases: ["completions"],
-  describe: "Print a shell completion script",
+  describe: false,
   builder: (yargs) =>
     yargs.positional("shell", {
       describe: "Shell name",

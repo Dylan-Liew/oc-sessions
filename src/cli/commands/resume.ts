@@ -2,14 +2,12 @@ import fs from "node:fs";
 import process from "node:process";
 import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
-import { sanitizeInline } from "../../output/format.js";
-import { selectWithSearch } from "../../output/prompt.js";
+import { resolveSessionIdInteractively, selectSessionId } from "../session-picker.js";
 import { runOpencode } from "../../services/opencode.js";
 import {
   getSessionDirectory,
   listRootSessionsForDirectory,
   openSessionStore,
-  resolveSessionId,
 } from "../../services/sessions.js";
 
 function ensureSessionDirectory(id: string, directory: string): void {
@@ -36,22 +34,7 @@ async function resolveResumeIdFromCurrentDirectory(): Promise<string> {
       return sessions[0].sessionId;
     }
 
-    process.stdout.write(`Multiple sessions found for ${process.cwd()}.\n`);
-    process.stdout.write("\n");
-    const selectedIndex = await selectWithSearch(
-      sessions.map((session) => ({
-        label: `${sanitizeInline(session.title)} (${session.sessionId.slice(0, 12)})`,
-        detail: session.updated,
-        searchText: `${session.title} ${session.sessionId} ${session.directory}`,
-      })),
-      { initialPrompt: "Search by title/id, then enter result number (Enter cancels): " },
-    );
-
-    if (selectedIndex === null) {
-      fail("Cancelled.");
-    }
-
-    return sessions[selectedIndex].sessionId;
+    return selectSessionId(sessions, { intro: `Multiple sessions found for ${process.cwd()}.` });
   } finally {
     db.close();
   }
@@ -74,11 +57,11 @@ export const resumeCommand: CommandModule = {
 
 export async function runResumeCommand(input?: string): Promise<void> {
   const resolvedId = input
-    ? (() => {
+    ? await (async () => {
         const db = openSessionStore();
 
         try {
-          return resolveSessionId(db, input, { allowTitle: true });
+          return resolveSessionIdInteractively(db, input, { allowTitle: true });
         } finally {
           db.close();
         }

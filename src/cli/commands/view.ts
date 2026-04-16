@@ -1,6 +1,7 @@
 import process from "node:process";
 import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
+import { resolveSessionIdInteractively } from "../session-picker.js";
 import { formatKeyValue, formatSection, printable, truncateInline } from "../../output/format.js";
 import { formatTable } from "../../output/table.js";
 import {
@@ -8,14 +9,13 @@ import {
   getSession,
   getSessionCounts,
   openSessionStore,
-  resolveSessionId,
 } from "../../services/sessions.js";
 
 export async function runViewCommand(input: string): Promise<void> {
   const db = openSessionStore();
 
   try {
-    const id = resolveSessionId(db, input, { allowTitle: true });
+    const id = await resolveSessionIdInteractively(db, input, { allowTitle: true });
     const session = getSession(db, id);
 
     if (!session) {

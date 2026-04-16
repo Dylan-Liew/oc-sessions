@@ -3,11 +3,22 @@ import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
 import {
+  getLatestSessionForDirectory,
   getLatestSessionForDirectorySince,
   openSessionStore,
   openSessionStoreWritable,
   setSessionTitle,
 } from "../../services/sessions.js";
+
+function getLatestSessionId(directory: string): string | undefined {
+  const db = openSessionStore();
+
+  try {
+    return getLatestSessionForDirectory(db, directory)?.sessionId;
+  } finally {
+    db.close();
+  }
+}
 
 function getLatestTouchedSessionId(directory: string, sinceMs: number): string | undefined {
   const db = openSessionStore();
@@ -19,16 +30,7 @@ function getLatestTouchedSessionId(directory: string, sinceMs: number): string |
   }
 }
 
-function applyTitleToLatestTouchedSession(directory: string, title: string, sinceMs: number): void {
-  const sessionId = getLatestTouchedSessionId(directory, sinceMs);
-
-  if (!sessionId) {
-    process.stderr.write(
-      `Warning: could not determine latest session to apply title "${title}".\n`,
-    );
-    return;
-  }
-
+function applySessionTitle(sessionId: string, title: string): void {
   const writeDb = openSessionStoreWritable();
 
   try {
@@ -36,6 +38,36 @@ function applyTitleToLatestTouchedSession(directory: string, title: string, sinc
   } finally {
     writeDb.close();
   }
+}
+
+function resolveNewSessionId(
+  directory: string,
+  latestBefore: string | undefined,
+  startedAtMs: number,
+): string | undefined {
+  const latestAfter = getLatestSessionId(directory);
+
+  if (latestAfter && latestAfter !== latestBefore) {
+    return latestAfter;
+  }
+
+  return getLatestTouchedSessionId(directory, startedAtMs);
+}
+
+function applyTitleToNewSession(
+  directory: string,
+  latestBefore: string | undefined,
+  title: string,
+  startedAtMs: number,
+): void {
+  const sessionId = resolveNewSessionId(directory, latestBefore, startedAtMs);
+
+  if (!sessionId) {
+    process.stderr.write(`Warning: could not determine new session to apply title "${title}".\n`);
+    return;
+  }
+
+  applySessionTitle(sessionId, title);
 }
 
 export function runNewCommand(args: string[]): never {
@@ -50,12 +82,13 @@ export function runNewCommand(args: string[]): never {
   }
 
   const directory = process.cwd();
+  const latestBefore = getLatestSessionId(directory);
   const startedAtMs = Date.now();
   const prompt = promptParts.join(" ");
   const exitCode = runOpencodeWithStatus(["--prompt", prompt], directory);
 
   if (exitCode === 0) {
-    applyTitleToLatestTouchedSession(directory, title, startedAtMs);
+    applyTitleToNewSession(directory, latestBefore, title, startedAtMs);
   }
 
   process.exit(exitCode);

@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
 import DatabaseConstructor from "better-sqlite3";
 import { fail } from "../lib/errors.js";
 import { rankFuzzy } from "../lib/fuzzy.js";
@@ -42,12 +45,39 @@ export interface SessionActivity {
   activityMs: number;
 }
 
+export type SessionResolution =
+  | { kind: "resolved"; sessionId: string }
+  | { kind: "ambiguous"; matches: RootSession[] }
+  | { kind: "not_found"; suggestions: RootSession[] };
+
 function getDbPath(): string {
+  const localPath = getDefaultDbPath();
+
+  if (localPath) {
+    return localPath;
+  }
+
   try {
     return readOpencode(["db", "path"]);
   } catch (error) {
     fail(`Failed to resolve OpenCode database path: ${(error as Error).message}`);
   }
+}
+
+function getDefaultDbPath(): string | undefined {
+  const home = homedir();
+  const xdgDataHome = process.env.XDG_DATA_HOME;
+  const localAppData = process.env.LOCALAPPDATA;
+  const appData = process.env.APPDATA;
+  const candidates = [
+    xdgDataHome ? path.join(xdgDataHome, "opencode", "opencode.db") : undefined,
+    home ? path.join(home, ".local", "share", "opencode", "opencode.db") : undefined,
+    home ? path.join(home, "Library", "Application Support", "opencode", "opencode.db") : undefined,
+    localAppData ? path.join(localAppData, "opencode", "opencode.db") : undefined,
+    appData ? path.join(appData, "opencode", "opencode.db") : undefined,
+  ];
+
+  return candidates.find((candidate) => candidate !== undefined && existsSync(candidate));
 }
 
 export function openSessionStore(): SessionDatabase {
@@ -66,109 +96,111 @@ export function openSessionStoreWritable(): SessionDatabase {
   }
 }
 
+function listSessionsByWhereClause(
+  db: SessionDatabase,
+  whereClause: string,
+  ...params: string[]
+): RootSession[] {
+  return db
+    .prepare(
+      `
+    select
+      s.id as sessionId,
+      datetime(s.time_updated / 1000, 'unixepoch', 'localtime') as updated,
+      replace(replace(s.title, char(10), ' '), char(13), ' ') as title,
+      coalesce(nullif(s.directory, ''), p.worktree, '') as directory
+    from session s
+    left join project p on p.id = s.project_id
+    where ${whereClause}
+    order by s.time_updated desc
+  `,
+    )
+    .all(...params) as RootSession[];
+}
+
+export function resolveSession(
+  db: SessionDatabase,
+  input: string,
+  options: { allowTitle?: boolean } = {},
+): SessionResolution {
+  const { allowTitle = false } = options;
+  const exactMatches = listSessionsByWhereClause(db, "s.id = ?", input);
+
+  if (exactMatches.length === 1) {
+    return { kind: "resolved", sessionId: exactMatches[0].sessionId };
+  }
+
+  if (allowTitle) {
+    const titleMatches = listSessionsByWhereClause(db, "s.title = ?", input);
+
+    if (titleMatches.length === 1) {
+      return { kind: "resolved", sessionId: titleMatches[0].sessionId };
+    }
+
+    if (titleMatches.length > 1) {
+      return { kind: "ambiguous", matches: titleMatches };
+    }
+
+    const titlePrefixMatches = listSessionsByWhereClause(
+      db,
+      "substr(s.title, 1, length(?)) = ?",
+      input,
+      input,
+    );
+
+    if (titlePrefixMatches.length === 1) {
+      return { kind: "resolved", sessionId: titlePrefixMatches[0].sessionId };
+    }
+
+    if (titlePrefixMatches.length > 1) {
+      return { kind: "ambiguous", matches: titlePrefixMatches };
+    }
+  }
+
+  const prefixMatches = listSessionsByWhereClause(
+    db,
+    "substr(s.id, 1, length(?)) = ?",
+    input,
+    input,
+  );
+
+  if (prefixMatches.length === 0) {
+    return { kind: "not_found", suggestions: findSessionMatches(db, input) };
+  }
+
+  if (prefixMatches.length > 1) {
+    return { kind: "ambiguous", matches: prefixMatches };
+  }
+
+  return { kind: "resolved", sessionId: prefixMatches[0].sessionId };
+}
+
 export function resolveSessionId(
   db: SessionDatabase,
   input: string,
   options: { allowTitle?: boolean } = {},
 ): string {
-  const { allowTitle = false } = options;
-  const exactMatches = db
-    .prepare(
-      `
-    select id
-    from session
-    where id = ?
-    order by time_updated desc
-  `,
-    )
-    .all(input) as Array<{ id: string }>;
+  const resolution = resolveSession(db, input, options);
 
-  if (exactMatches.length === 1) {
-    return exactMatches[0].id;
+  if (resolution.kind === "resolved") {
+    return resolution.sessionId;
   }
 
-  if (allowTitle) {
-    const titleMatches = db
-      .prepare(
-        `
-      select id
-      from session
-      where title = ?
-      order by time_updated desc
-    `,
-      )
-      .all(input) as Array<{ id: string }>;
-
-    if (titleMatches.length === 1) {
-      return titleMatches[0].id;
-    }
-
-    if (titleMatches.length > 1) {
-      fail(
-        `! Session title is ambiguous: ${input}\n\n${titleMatches.map((row) => row.id).join("\n")}`,
-      );
-    }
-
-    const titlePrefixMatches = db
-      .prepare(
-        `
-      select
-        id,
-        replace(replace(title, char(10), ' '), char(13), ' ') as title
-      from session
-      where substr(title, 1, length(?)) = ?
-      order by time_updated desc
-    `,
-      )
-      .all(input, input) as Array<{ id: string; title: string }>;
-
-    if (titlePrefixMatches.length === 1) {
-      return titlePrefixMatches[0].id;
-    }
-
-    if (titlePrefixMatches.length > 1) {
-      fail(
-        `! Session title prefix is ambiguous: ${input}\n\n` +
-          `${titlePrefixMatches.map((row) => `${row.id}\t${row.title}`).join("\n")}`,
-      );
-    }
+  if (resolution.kind === "ambiguous") {
+    fail(
+      `! Session is ambiguous: ${input}\n\n` +
+        resolution.matches.map((row) => `${row.sessionId}\t${row.title}`).join("\n"),
+    );
   }
 
-  const prefixMatches = db
-    .prepare(
-      `
-    select id
-    from session
-    where substr(id, 1, length(?)) = ?
-    order by time_updated desc
-  `,
-    )
-    .all(input, input) as Array<{ id: string }>;
-
-  if (prefixMatches.length === 0) {
-    const fuzzyMatches = findSessionMatches(db, input);
-
-    if (fuzzyMatches.length > 0) {
-      fail(
-        `! Session not found: ${input}\n\n` +
-          `Closest matches:\n${fuzzyMatches.map((row) => `${row.sessionId}\t${row.title}`).join("\n")}`,
-      );
-    }
-
-    fail(`! Session not found: ${input}`);
+  if (resolution.suggestions.length > 0) {
+    fail(
+      `! Session not found: ${input}\n\n` +
+        `Closest matches:\n${resolution.suggestions.map((row) => `${row.sessionId}\t${row.title}`).join("\n")}`,
+    );
   }
 
-  if (prefixMatches.length > 1) {
-    const fuzzyMatches = findSessionMatches(db, input);
-    const lines =
-      fuzzyMatches.length > 0
-        ? fuzzyMatches.map((row) => `${row.sessionId}\t${row.title}`).join("\n")
-        : prefixMatches.map((row) => row.id).join("\n");
-
-    fail(`! Session prefix is ambiguous: ${input}\n\n${lines}`);
-  }
-
-  return prefixMatches[0].id;
+  fail(`! Session not found: ${input}`);
 }
 
 function listSearchableSessions(db: SessionDatabase): RootSession[] {
@@ -261,6 +293,26 @@ export function getLatestSessionForDirectorySince(
   `,
     )
     .get(directory, sinceMs) as SessionActivity | undefined;
+}
+
+export function getLatestSessionForDirectory(
+  db: SessionDatabase,
+  directory: string,
+): SessionActivity | undefined {
+  return db
+    .prepare(
+      `
+    select
+      s.id as sessionId,
+      max(coalesce(s.time_updated, 0), coalesce(s.time_created, 0)) as activityMs
+    from session s
+    left join project p on p.id = s.project_id
+    where coalesce(nullif(s.directory, ''), p.worktree, '') = ?
+    order by activityMs desc
+    limit 1
+  `,
+    )
+    .get(directory) as SessionActivity | undefined;
 }
 
 export function getSession(db: SessionDatabase, id: string): SessionDetails | undefined {

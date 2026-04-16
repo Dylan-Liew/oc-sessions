@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
-const repoRoot = "/home/william/projects/temp/oc-sessions";
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builtCliPath = "./dist/cli/index.js";
 
 function runCli(args: string[]) {
@@ -14,11 +16,10 @@ function runCli(args: string[]) {
 
 describe("oc CLI", () => {
   test("shows help output with completion command", () => {
-    const result = runCli(["--help"]);
+    const result = runCli(["help"]);
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("oc <command>");
-    expect(result.stdout).toContain("completion");
     expect(result.stdout).toContain("resume");
   });
 

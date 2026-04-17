@@ -295,6 +295,29 @@ export function getLatestSessionForDirectorySince(
     .get(directory, sinceMs) as SessionActivity | undefined;
 }
 
+export function getLatestRootSessionForDirectoryCreatedSince(
+  db: SessionDatabase,
+  directory: string,
+  sinceMs: number,
+): SessionActivity | undefined {
+  return db
+    .prepare(
+      `
+    select
+      s.id as sessionId,
+      coalesce(s.time_created, 0) as activityMs
+    from session s
+    left join project p on p.id = s.project_id
+    where s.parent_id is null
+      and coalesce(nullif(s.directory, ''), p.worktree, '') = ?
+      and coalesce(s.time_created, 0) >= ?
+    order by coalesce(s.time_created, 0) desc
+    limit 1
+  `,
+    )
+    .get(directory, sinceMs) as SessionActivity | undefined;
+}
+
 export function getLatestSessionForDirectory(
   db: SessionDatabase,
   directory: string,

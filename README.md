@@ -42,7 +42,7 @@ oc <command>
 
 Commands:
   help                 Show CLI help
-  new                  Start a new titled OpenCode session
+  new <title> [prompt...]  Start a new titled OpenCode session
   list, ls             List root sessions across all projects
   view, v <session>    Show session metadata and recent text parts
   resume, r [session]  Launch opencode in the session directory
@@ -65,7 +65,8 @@ When a session value is provided, the CLI resolves it in this order:
 
 ```bash
 oc help
-oc new "Fix login redirect" "Investigate the redirect loop after sign-in and patch it."
+oc new project-riolu
+oc new "fix-login-redirect" "Investigate the redirect loop after sign-in and patch it."
 oc list
 oc resume
 ```

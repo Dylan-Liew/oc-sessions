@@ -3,12 +3,15 @@ import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
 import {
+  getLatestRootSessionForDirectoryCreatedSince,
   getLatestSessionForDirectory,
   getLatestSessionForDirectorySince,
   openSessionStore,
   openSessionStoreWritable,
   setSessionTitle,
 } from "../../services/sessions.js";
+
+const EMPTY_PROMPT = "";
 
 function getLatestSessionId(directory: string): string | undefined {
   const db = openSessionStore();
@@ -30,6 +33,16 @@ function getLatestTouchedSessionId(directory: string, sinceMs: number): string |
   }
 }
 
+function getLatestCreatedRootSessionId(directory: string, sinceMs: number): string | undefined {
+  const db = openSessionStore();
+
+  try {
+    return getLatestRootSessionForDirectoryCreatedSince(db, directory, sinceMs)?.sessionId;
+  } finally {
+    db.close();
+  }
+}
+
 function applySessionTitle(sessionId: string, title: string): void {
   const writeDb = openSessionStoreWritable();
 
@@ -45,6 +58,12 @@ function resolveNewSessionId(
   latestBefore: string | undefined,
   startedAtMs: number,
 ): string | undefined {
+  const latestCreatedRootSession = getLatestCreatedRootSessionId(directory, startedAtMs);
+
+  if (latestCreatedRootSession) {
+    return latestCreatedRootSession;
+  }
+
   const latestAfter = getLatestSessionId(directory);
 
   if (latestAfter && latestAfter !== latestBefore) {
@@ -77,14 +96,10 @@ export function runNewCommand(args: string[]): never {
     fail("Missing required title");
   }
 
-  if (promptParts.length === 0) {
-    fail("Missing required prompt. Usage: oc new <title> <prompt...>");
-  }
-
   const directory = process.cwd();
   const latestBefore = getLatestSessionId(directory);
   const startedAtMs = Date.now();
-  const prompt = promptParts.join(" ");
+  const prompt = promptParts.length > 0 ? promptParts.join(" ") : EMPTY_PROMPT;
   const exitCode = runOpencodeWithStatus(["--prompt", prompt], directory);
 
   if (exitCode === 0) {
@@ -95,7 +110,7 @@ export function runNewCommand(args: string[]): never {
 }
 
 export const newCommand: CommandModule = {
-  command: "new <title> <prompt...>",
+  command: "new <title> [prompt...]",
   describe: "Start a new titled OpenCode session",
   builder: (yargs) =>
     yargs
@@ -104,7 +119,7 @@ export const newCommand: CommandModule = {
         type: "string",
       })
       .positional("prompt", {
-        describe: "Prompt to send to OpenCode",
+        describe: "Optional prompt to send to OpenCode",
         type: "string",
         array: true,
       }),

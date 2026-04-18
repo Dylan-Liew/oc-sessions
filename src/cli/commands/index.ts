@@ -1,4 +1,5 @@
 import type { CommandModule } from "yargs";
+import { cleanupCommand } from "./cleanup.js";
 import { completionCommand, completeCommand } from "./completion.js";
 import { deleteCommand } from "./delete.js";
 import { helpCommand } from "./help.js";
@@ -13,6 +14,7 @@ export const commandModules = [
   listCommand,
   viewCommand,
   deleteCommand,
+  cleanupCommand,
   helpCommand,
   completionCommand,
 ] as const satisfies ReadonlyArray<CommandModule>;

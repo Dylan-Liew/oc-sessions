@@ -64,6 +64,10 @@ function getDbPath(): string {
   }
 }
 
+export function getSessionStorePath(): string {
+  return getDbPath();
+}
+
 function getDefaultDbPath(): string | undefined {
   const home = homedir();
   const xdgDataHome = process.env.XDG_DATA_HOME;
@@ -374,6 +378,84 @@ export function getSessionDirectory(db: SessionDatabase, id: string): string {
     .get(id) as { directory: string } | undefined;
 
   return row ? row.directory : "";
+}
+
+export function getSessionProjectId(db: SessionDatabase, id: string): string | undefined {
+  const row = db
+    .prepare(
+      `
+    select s.project_id as projectId
+    from session s
+    where s.id = ?
+  `,
+    )
+    .get(id) as { projectId: string } | undefined;
+
+  return row?.projectId;
+}
+
+export function sessionExists(db: SessionDatabase, id: string): boolean {
+  const row = db
+    .prepare(
+      `
+    select 1 as value
+    from session s
+    where s.id = ?
+    limit 1
+  `,
+    )
+    .get(id) as { value: number } | undefined;
+
+  return row !== undefined;
+}
+
+export function deleteProjectIfUnused(db: SessionDatabase, projectId: string): boolean {
+  if (!projectId || projectId === "global") {
+    return false;
+  }
+
+  const row = db
+    .prepare(
+      `
+    select count(*) as count
+    from session s
+    where s.project_id = ?
+  `,
+    )
+    .get(projectId) as { count: number };
+
+  if (row.count > 0) {
+    return false;
+  }
+
+  const result = db
+    .prepare(
+      `
+    delete from project
+    where id = ?
+  `,
+    )
+    .run(projectId);
+
+  return result.changes > 0;
+}
+
+export function deleteUnusedProjects(db: SessionDatabase): number {
+  const result = db
+    .prepare(
+      `
+    delete from project
+    where id <> 'global'
+      and not exists (
+        select 1
+        from session s
+        where s.project_id = project.id
+      )
+  `,
+    )
+    .run();
+
+  return result.changes;
 }
 
 export function getSessionCounts(db: SessionDatabase, id: string): SessionCounts {

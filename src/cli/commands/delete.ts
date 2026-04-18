@@ -1,10 +1,17 @@
 import fs from "node:fs";
+import process from "node:process";
 import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
 import { resolveSessionIdInteractively } from "../session-picker.js";
 import { confirm } from "../../output/prompt.js";
-import { runOpencode } from "../../services/opencode.js";
-import { getSession, openSessionStore } from "../../services/sessions.js";
+import { runOpencodeWithStatus } from "../../services/opencode.js";
+import {
+  deleteProjectIfUnused,
+  getSession,
+  getSessionProjectId,
+  openSessionStore,
+  openSessionStoreWritable,
+} from "../../services/sessions.js";
 
 function ensureSessionDirectory(id: string, directory: string): void {
   if (!directory) {
@@ -41,8 +48,22 @@ export async function runDeleteCommand(input: string): Promise<void> {
       fail("Cancelled.");
     }
 
+    const projectId = getSessionProjectId(db, session.sessionId);
+
     db.close();
-    runOpencode(["session", "delete", session.sessionId], directory);
+    const exitCode = runOpencodeWithStatus(["session", "delete", session.sessionId], directory);
+
+    if (exitCode === 0 && projectId) {
+      const writeDb = openSessionStoreWritable();
+
+      try {
+        deleteProjectIfUnused(writeDb, projectId);
+      } finally {
+        writeDb.close();
+      }
+    }
+
+    process.exit(exitCode);
   } finally {
     if (db.open) {
       db.close();

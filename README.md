@@ -46,6 +46,7 @@ Commands:
   list, ls             List root sessions across all projects
   view, v <session>    Show session metadata and recent text parts
   delete, d <session>  Delete the session via opencode after confirmation
+  cleanup              Clean stale OpenCode DB/cache artifacts
   help                 Show CLI help
   completion           Print a fish completion script
 ```
@@ -68,6 +69,8 @@ oc help
 oc new
 oc resume
 oc list
+oc cleanup
+oc cleanup --vacuum
 ```
 
 ## Optional Fish completions

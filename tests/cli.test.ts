@@ -21,6 +21,7 @@ describe("oc CLI", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("oc <command>");
     expect(result.stdout).toContain("resume");
+    expect(result.stdout).toContain("cleanup");
   });
 
   test("prints fish completion script", () => {

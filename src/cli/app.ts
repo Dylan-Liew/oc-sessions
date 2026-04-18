@@ -28,16 +28,16 @@ export async function showHelpForArgs(argv: string[]): Promise<void> {
 function createCli(argv: string[], options: BuildCliOptions = {}): Argv {
   const { includeInternalCommands = false } = options;
   const examples = [
-    ['$0 new "Fix login" "Patch redirect loop"', "Start a new titled session"] as const,
-    ["$0 list", "List root sessions across all projects"] as const,
+    ["$0 new", "Start a new OpenCode session"] as const,
     ["$0 resume", "Resume the latest root session for the current directory"] as const,
+    ["$0 list", "List root sessions across all projects"] as const,
   ];
 
   let cli = yargs(argv)
     .scriptName("oc")
     .parserConfiguration({
       "parse-positional-numbers": false,
-      "sort-commands": true,
+      "sort-commands": false,
     })
     .usage("Usage:\n  $0 <command>")
     .exitProcess(false)

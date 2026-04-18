@@ -9,11 +9,11 @@ import { viewCommand } from "./view.js";
 
 export const commandModules = [
   newCommand,
-  helpCommand,
+  resumeCommand,
   listCommand,
   viewCommand,
-  resumeCommand,
   deleteCommand,
+  helpCommand,
   completionCommand,
 ] as const satisfies ReadonlyArray<CommandModule>;
 

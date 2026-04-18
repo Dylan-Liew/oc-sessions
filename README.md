@@ -41,12 +41,12 @@ node ./dist/cli/index.js list
 oc <command>
 
 Commands:
-  help                 Show CLI help
-  new <title> [prompt...]  Start a new titled OpenCode session
+  new                  Start a new OpenCode session
+  resume, r [session]  Launch opencode in the session directory
   list, ls             List root sessions across all projects
   view, v <session>    Show session metadata and recent text parts
-  resume, r [session]  Launch opencode in the session directory
   delete, d <session>  Delete the session via opencode after confirmation
+  help                 Show CLI help
   completion           Print a fish completion script
 ```
 
@@ -65,10 +65,9 @@ When a session value is provided, the CLI resolves it in this order:
 
 ```bash
 oc help
-oc new project-riolu
-oc new "fix-login-redirect" "Investigate the redirect loop after sign-in and patch it."
-oc list
+oc new
 oc resume
+oc list
 ```
 
 ## Optional Fish completions

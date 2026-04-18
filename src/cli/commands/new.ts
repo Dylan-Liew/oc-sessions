@@ -2,14 +2,7 @@ import process from "node:process";
 import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
-import {
-  getLatestRootSessionForDirectoryCreatedSince,
-  getLatestSessionForDirectory,
-  getLatestSessionForDirectorySince,
-  openSessionStore,
-  openSessionStoreWritable,
-  setSessionTitle,
-} from "../../services/sessions.js";
+import { getLatestSessionForDirectory, openSessionStore } from "../../services/sessions.js";
 
 const EMPTY_PROMPT = "";
 
@@ -23,72 +16,6 @@ function getLatestSessionId(directory: string): string | undefined {
   }
 }
 
-function getLatestTouchedSessionId(directory: string, sinceMs: number): string | undefined {
-  const db = openSessionStore();
-
-  try {
-    return getLatestSessionForDirectorySince(db, directory, sinceMs)?.sessionId;
-  } finally {
-    db.close();
-  }
-}
-
-function getLatestCreatedRootSessionId(directory: string, sinceMs: number): string | undefined {
-  const db = openSessionStore();
-
-  try {
-    return getLatestRootSessionForDirectoryCreatedSince(db, directory, sinceMs)?.sessionId;
-  } finally {
-    db.close();
-  }
-}
-
-function applySessionTitle(sessionId: string, title: string): void {
-  const writeDb = openSessionStoreWritable();
-
-  try {
-    setSessionTitle(writeDb, sessionId, title);
-  } finally {
-    writeDb.close();
-  }
-}
-
-function resolveNewSessionId(
-  directory: string,
-  latestBefore: string | undefined,
-  startedAtMs: number,
-): string | undefined {
-  const latestCreatedRootSession = getLatestCreatedRootSessionId(directory, startedAtMs);
-
-  if (latestCreatedRootSession) {
-    return latestCreatedRootSession;
-  }
-
-  const latestAfter = getLatestSessionId(directory);
-
-  if (latestAfter && latestAfter !== latestBefore) {
-    return latestAfter;
-  }
-
-  return getLatestTouchedSessionId(directory, startedAtMs);
-}
-
-function applyTitleToNewSession(
-  directory: string,
-  latestBefore: string | undefined,
-  title: string,
-  startedAtMs: number,
-): void {
-  const sessionId = resolveNewSessionId(directory, latestBefore, startedAtMs);
-
-  if (!sessionId) {
-    process.stderr.write(`Warning: could not determine new session to apply title "${title}".\n`);
-    return;
-  }
-
-  applySessionTitle(sessionId, title);
-}
-
 export function runNewCommand(args: string[]): never {
   const [title, ...promptParts] = args;
 
@@ -98,12 +25,18 @@ export function runNewCommand(args: string[]): never {
 
   const directory = process.cwd();
   const latestBefore = getLatestSessionId(directory);
-  const startedAtMs = Date.now();
   const prompt = promptParts.length > 0 ? promptParts.join(" ") : EMPTY_PROMPT;
-  const exitCode = runOpencodeWithStatus(["--prompt", prompt], directory);
+  const commandParts = ["run", "--title", title, prompt];
+  const exitCode = runOpencodeWithStatus(commandParts, directory);
 
   if (exitCode === 0) {
-    applyTitleToNewSession(directory, latestBefore, title, startedAtMs);
+    const latestAfter = getLatestSessionId(directory);
+
+    if (!latestAfter || latestAfter === latestBefore) {
+      process.stderr.write(
+        `Warning: opencode run completed but could not confirm creation of a new titled session for "${title}".\n`,
+      );
+    }
   }
 
   process.exit(exitCode);

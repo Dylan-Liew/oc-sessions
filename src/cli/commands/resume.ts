@@ -5,10 +5,12 @@ import { fail } from "../../lib/errors.js";
 import { resolveSessionIdInteractively, selectSessionId } from "../session-picker.js";
 import { runOpencode } from "../../services/opencode.js";
 import {
+  getSession,
   getSessionDirectory,
   listRootSessionsForDirectory,
   openSessionStore,
 } from "../../services/sessions.js";
+import { renameZellijTab } from "../../services/zellij.js";
 
 function ensureSessionDirectory(id: string, directory: string): void {
   if (!directory) {
@@ -72,7 +74,9 @@ export async function runResumeCommand(input?: string): Promise<void> {
 
   try {
     const directory = getSessionDirectory(db, resolvedId);
+    const session = getSession(db, resolvedId);
     ensureSessionDirectory(resolvedId, directory);
+    renameZellijTab(session?.title ?? "opencode");
     runOpencode(["-s", resolvedId], directory);
   } finally {
     db.close();

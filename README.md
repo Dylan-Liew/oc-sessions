@@ -45,7 +45,10 @@ Commands:
   resume, r [session]  Launch opencode in the session directory
   list, ls             List root sessions across all projects
   view, v <session>    Show session metadata and recent text parts
+  rename, mv <session> <title...>
+                       Rename a session title
   delete, d <session>  Delete the session via opencode after confirmation
+  projects, p          List OpenCode projects and session counts
   cleanup              Clean stale OpenCode DB/cache artifacts
   help                 Show CLI help
   completion           Print a fish completion script
@@ -53,7 +56,7 @@ Commands:
 
 ## Session lookup
 
-`<session>` is required for `view` and `delete`. `[session]` is optional for `resume`.
+`<session>` is required for `view`, `rename`, and `delete`. `[session]` is optional for `resume`.
 
 When a session value is provided, the CLI resolves it in this order:
 
@@ -69,6 +72,8 @@ oc help
 oc new
 oc resume
 oc list
+oc projects
+oc rename ses_abc123 "better title"
 oc cleanup
 oc cleanup --vacuum
 ```

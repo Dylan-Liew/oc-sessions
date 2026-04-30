@@ -31,6 +31,8 @@ function createCli(argv: string[], options: BuildCliOptions = {}): Argv {
     ["$0 new", "Start a new OpenCode session"] as const,
     ["$0 resume", "Resume the latest root session for the current directory"] as const,
     ["$0 list", "List root sessions across all projects"] as const,
+    ["$0 projects", "List OpenCode projects and session counts"] as const,
+    ["$0 rename <session> <title>", "Rename a session title"] as const,
     ["$0 cleanup --vacuum", "Clean stale cache and compact database"] as const,
   ];
 

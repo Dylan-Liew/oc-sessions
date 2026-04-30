@@ -13,14 +13,20 @@ import {
   openSessionStoreWritable,
 } from "../../services/sessions.js";
 
-function ensureSessionDirectory(id: string, directory: string): void {
+function getDeleteWorkingDirectory(id: string, directory: string): string {
   if (!directory) {
-    fail(`No directory found for session: ${id}`);
+    process.stderr.write(`No directory found for session ${id}; deleting from ${process.cwd()} instead.\n`);
+    return process.cwd();
   }
 
   if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
-    fail(`Session directory does not exist: ${directory}`);
+    process.stderr.write(
+      `Session directory does not exist: ${directory}; deleting from ${process.cwd()} instead.\n`,
+    );
+    return process.cwd();
   }
+
+  return directory;
 }
 
 async function resolveDeleteSessionId(
@@ -42,7 +48,7 @@ export async function runDeleteCommand(input: string): Promise<void> {
     }
 
     const directory = session.directory || session.worktree;
-    ensureSessionDirectory(id, directory);
+    const workingDirectory = getDeleteWorkingDirectory(id, directory);
 
     if (!(await confirm(`Delete session "${session.title}" (${session.sessionId})? [y/N] `))) {
       fail("Cancelled.");
@@ -51,7 +57,7 @@ export async function runDeleteCommand(input: string): Promise<void> {
     const projectId = getSessionProjectId(db, session.sessionId);
 
     db.close();
-    const exitCode = runOpencodeWithStatus(["session", "delete", session.sessionId], directory);
+    const exitCode = runOpencodeWithStatus(["session", "delete", session.sessionId], workingDirectory);
 
     if (exitCode === 0 && projectId) {
       const writeDb = openSessionStoreWritable();

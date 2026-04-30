@@ -45,6 +45,15 @@ export interface SessionActivity {
   activityMs: number;
 }
 
+export interface ProjectSummary {
+  projectId: string;
+  name: string;
+  worktree: string;
+  sessions: number;
+  rootSessions: number;
+  lastUpdated: string;
+}
+
 export type SessionResolution =
   | { kind: "resolved"; sessionId: string }
   | { kind: "ambiguous"; matches: RootSession[] }
@@ -253,6 +262,29 @@ export function listRootSessions(db: SessionDatabase): RootSession[] {
   `,
     )
     .all() as RootSession[];
+}
+
+export function listProjects(db: SessionDatabase): ProjectSummary[] {
+  return db
+    .prepare(
+      `
+    select
+      p.id as projectId,
+      coalesce(nullif(p.name, ''), p.id) as name,
+      coalesce(p.worktree, '') as worktree,
+      count(s.id) as sessions,
+      sum(case when s.id is not null and s.parent_id is null then 1 else 0 end) as rootSessions,
+      coalesce(
+        datetime(max(coalesce(s.time_updated, s.time_created)) / 1000, 'unixepoch', 'localtime'),
+        ''
+      ) as lastUpdated
+    from project p
+    left join session s on s.project_id = p.id
+    group by p.id
+    order by max(coalesce(s.time_updated, s.time_created)) desc, p.id asc
+  `,
+    )
+    .all() as ProjectSummary[];
 }
 
 export function listRootSessionsForDirectory(

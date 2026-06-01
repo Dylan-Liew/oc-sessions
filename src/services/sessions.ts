@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import DatabaseConstructor from "better-sqlite3";
 import { fail } from "../lib/errors.js";
 import { rankFuzzy } from "../lib/fuzzy.js";
 import { readOpencode } from "./opencode.js";
+import { openSqliteDatabase, type SqliteDatabase } from "./sqlite.js";
 
-export type SessionDatabase = InstanceType<typeof DatabaseConstructor>;
+export type SessionDatabase = SqliteDatabase;
 
 export interface RootSession {
   sessionId: string;
@@ -95,7 +95,7 @@ function getDefaultDbPath(): string | undefined {
 
 export function openSessionStore(): SessionDatabase {
   try {
-    return new DatabaseConstructor(getDbPath(), { readonly: true, fileMustExist: true });
+    return openSqliteDatabase(getDbPath(), { readonly: true });
   } catch (error) {
     fail(`Failed to open SQLite database: ${(error as Error).message}`);
   }
@@ -103,7 +103,7 @@ export function openSessionStore(): SessionDatabase {
 
 export function openSessionStoreWritable(): SessionDatabase {
   try {
-    return new DatabaseConstructor(getDbPath(), { readonly: false, fileMustExist: true });
+    return openSqliteDatabase(getDbPath(), { readonly: false });
   } catch (error) {
     fail(`Failed to open SQLite database: ${(error as Error).message}`);
   }

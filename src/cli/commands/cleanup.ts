@@ -78,9 +78,7 @@ export function runCleanupCommand(vacuum: boolean): void {
       `Cleanup complete. projects_removed=${result.projectsRemoved} session_diff_removed=${result.sessionDiffFilesRemoved} vacuum=${result.vacuumed ? "yes" : "no"}\n`,
     );
   } finally {
-    if (db.open) {
-      db.close();
-    }
+    db.close();
   }
 }
 

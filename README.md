@@ -4,8 +4,12 @@
 
 ## Requirements
 
-- Node.js `^20.19.0 || ^22.12.0 || >=23`
+- Node.js `>=24` or Bun `>=1.1.0`
 - `opencode` available in your shell
+
+`oc-sessions` can be installed with npm or Bun. It uses runtime-native SQLite:
+Node runs use `node:sqlite`, and Bun runs use `bun:sqlite`. The package does
+not depend on `better-sqlite3` or any other third-party native SQLite addon.
 
 ## Install
 
@@ -21,6 +25,9 @@ From Bun:
 bun add -g oc-sessions
 ```
 
+The default `oc` binary runs on Node.js. A Bun-specific binary is also exposed
+as `oc-bun` for users who want to run the same CLI under Bun.
+
 For local development from this repository:
 
 ```bash
@@ -33,6 +40,7 @@ You can also run the built CLI directly:
 ```bash
 bun run build
 node ./dist/cli/index.js list
+bun ./dist/cli/index.js list
 ```
 
 ## Usage

@@ -15,7 +15,9 @@ import {
 
 function getDeleteWorkingDirectory(id: string, directory: string): string {
   if (!directory) {
-    process.stderr.write(`No directory found for session ${id}; deleting from ${process.cwd()} instead.\n`);
+    process.stderr.write(
+      `No directory found for session ${id}; deleting from ${process.cwd()} instead.\n`,
+    );
     return process.cwd();
   }
 
@@ -57,7 +59,10 @@ export async function runDeleteCommand(input: string): Promise<void> {
     const projectId = getSessionProjectId(db, session.sessionId);
 
     db.close();
-    const exitCode = runOpencodeWithStatus(["session", "delete", session.sessionId], workingDirectory);
+    const exitCode = runOpencodeWithStatus(
+      ["session", "delete", session.sessionId],
+      workingDirectory,
+    );
 
     if (exitCode === 0 && projectId) {
       const writeDb = openSessionStoreWritable();
@@ -71,9 +76,7 @@ export async function runDeleteCommand(input: string): Promise<void> {
 
     process.exit(exitCode);
   } finally {
-    if (db.open) {
-      db.close();
-    }
+    db.close();
   }
 }
 

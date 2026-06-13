@@ -1,0 +1,57 @@
+{
+  "name": "opencode-s",
+  "version": "0.1.9",
+  "description": "A CLI for listing, inspecting, resuming, and deleting OpenCode sessions from the local session database.",
+  "type": "module",
+  "bin": {
+    "oc": "bin/oc.js",
+    "oc-bun": "bin/oc-bun.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24",
+    "bun": ">=1.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dylan-Liew/opencode-s.git"
+  },
+  "homepage": "https://github.com/Dylan-Liew/opencode-s#readme",
+  "bugs": {
+    "url": "https://github.com/Dylan-Liew/opencode-s/issues"
+  },
+  "keywords": [
+    "opencode",
+    "cli",
+    "sessions",
+    "sqlite"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bunx tsc -p tsconfig.json",
+    "check": "bunx tsc --noEmit -p tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "bun run build",
+    "smoke:node": "node ./dist/cli/index.js help",
+    "smoke:bun": "bun ./bin/oc-bun.js help",
+    "start": "node ./dist/cli/index.js",
+    "test": "bun run build && bun test && bun run smoke:node && bun run smoke:bun"
+  },
+  "dependencies": {
+    "yargs": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.3",
+    "@types/node": "^24.5.2",
+    "@types/yargs": "^17.0.35",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}

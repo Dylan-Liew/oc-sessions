@@ -1,0 +1,6 @@
+node_modules/
+bin/*
+!bin/oc.js
+!bin/oc-bun.js
+dist/
+*.tsbuildinfo

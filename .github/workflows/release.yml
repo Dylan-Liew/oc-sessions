@@ -42,4 +42,4 @@ jobs:
         run: bun ./bin/oc-bun.js help
 
       - name: Publish to npm
-        run: npm publish --provenance --access public --verbose
+        run: npm publish

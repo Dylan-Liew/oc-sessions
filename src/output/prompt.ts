@@ -398,12 +398,12 @@ export async function selectManyWithSearch(
   }
 }
 
-export async function confirmDeletePhrase(message: string): Promise<boolean> {
+export async function confirmDelete(message: string): Promise<boolean> {
   const rl = readlinePromises.createInterface({ input: process.stdin, output: process.stderr });
 
   try {
     const reply = await rl.question(message);
-    return reply.trim() === "DELETE";
+    return /^(y|yes)$/i.test(reply.trim());
   } finally {
     rl.close();
   }

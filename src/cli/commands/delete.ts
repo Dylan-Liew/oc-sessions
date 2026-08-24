@@ -4,7 +4,7 @@ import type { CommandModule } from "yargs";
 import { fail } from "../../lib/errors.js";
 import { resolveSessionIdInteractively, selectSessionIds } from "../session-picker.js";
 import { sanitizeInline } from "../../output/format.js";
-import { confirmDeletePhrase } from "../../output/prompt.js";
+import { confirmDelete } from "../../output/prompt.js";
 import { formatTable } from "../../output/table.js";
 import { runOpencodeWithStatus } from "../../services/opencode.js";
 import {
@@ -100,7 +100,7 @@ export async function runDeleteCommand(inputs: string[]): Promise<void> {
   process.stdout.write(`\nDelete ${targets.length} OpenCode session(s):\n\n`);
   process.stdout.write(renderDeletePlan(targets));
 
-  if (!(await confirmDeletePhrase("\nType DELETE to confirm: "))) {
+  if (!(await confirmDelete("\nDelete selected sessions? [y/N] "))) {
     fail("Cancelled.");
   }
 

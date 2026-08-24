@@ -76,7 +76,7 @@ When a session value is provided, the CLI resolves it in this order:
 
 When `oc delete` is run without arguments, it opens an interactive multi-select picker. In TTY mode, type to filter, use `Space` to toggle sessions, and press `Enter` to continue. In non-TTY mode, enter numbers and ranges like `1,3,5-8`.
 
-Deletion always requires typing `DELETE` before any sessions are removed.
+Deletion asks for `y/N` confirmation before any sessions are removed.
 
 ## Quick workflows
 
